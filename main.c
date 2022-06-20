@@ -44,13 +44,13 @@ static char VERSION[] = "XX.YY.ZZ";
 #include <getopt.h>
 
 
-#include "clk.h"
-#include "gpio.h"
-#include "dma.h"
-#include "pwm.h"
-#include "version.h"
+#include "rpi_ws281x/clk.h"
+#include "rpi_ws281x/gpio.h"
+#include "rpi_ws281x/dma.h"
+#include "rpi_ws281x/pwm.h"
+#include "rpi_ws281x/version.h"
 
-#include "ws2811.h"
+#include "rpi_ws281x/ws2811.h"
 
 
 #define ARRAY_SIZE(stuff)       (sizeof(stuff) / sizeof(stuff[0]))
@@ -142,7 +142,8 @@ void matrix_clear(void)
     }
 }
 
-int dotspos[] = { 0, 1, 2, 3, 4, 5, 6, 7 };
+int dotspos[] = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21};
+//int dotspos[] = { 0, 1, 2, 3, 4, 5, 6, 7 };
 ws2811_led_t dotcolors[] =
 {
     0x00200000,  // red
@@ -183,10 +184,86 @@ void matrix_bottom(void)
         if (ledstring.channel[0].strip_type == SK6812_STRIP_RGBW) {
             matrix[dotspos[i] + (height - 1) * width] = dotcolors_rgbw[i];
         } else {
-            matrix[dotspos[i] + (height - 1) * width] = dotcolors[i];
+            matrix[dotspos[i] + (height - 1) * width] = dotcolors[i%8];
         }
     }
 }
+
+void matrix_oscillate(void) {
+  static int level = 18;
+
+  if (level + 1 > (int)(ARRAY_SIZE(dotspos)))
+    level = -height + 1;
+
+  int bottom_level = height - abs(level) - 1;
+
+  printf("Level: %d, bottom: %d\n", level, bottom_level);
+
+  for (int i = 0; i < height; i++) {
+    if (i % 2 == 0) {
+      //matrix[y * width + x] = matrix[(y + 1)*width + width - x - 1];
+      if (level % 2 == 0) {
+        // Turn current row's value black
+        matrix[(abs(level - 1)) * width + i] = 0;
+        matrix[abs(level) * width + width - i - 1] = dotcolors[0];
+      }
+      else {
+        matrix[(abs(level - 1)) * width + width - i - 1] = 0;
+        matrix[abs(level) * width + i ] = dotcolors[0];
+      }
+    }
+    else {
+      if (level % 2 != 0) {
+        // Turn current row's value black
+        matrix[(abs(bottom_level) + (level < 0 ? -1 : 1)) * width + i] = 0;
+        matrix[abs(bottom_level) * width + width - i - 1] = dotcolors[0];
+      }
+      else {
+        matrix[(abs(bottom_level) + (level <= 0 ? -1 : 1)) * width + width - i - 1] = 0;
+        matrix[abs(bottom_level) * width + i ] = dotcolors[0];
+      }
+    }
+  }
+
+  level++;
+}
+
+/*void matrix_oscillate(void) {
+  static int level = 0;
+
+  if (level - 1 > (int)(ARRAY_SIZE(dotspos)))
+    level = 0;//-height - 1;
+
+  int bottom_level = height - level - 1;
+
+  for (int i = 0; i < (int)(ARRAY_SIZE(dotspos)); i++) {
+    if (i % 2 == 0) {
+      //matrix[y * width + x] = matrix[(y + 1)*width + width - x - 1];
+      if (level % 2 == 0) {
+        // Turn current row's value black
+        matrix[(level - 1) * width + i] = 0;
+        matrix[(level) * width + width - i - 1] = dotcolors[0];
+      }
+      else {
+        matrix[(level - 1) * width + width - i - 1] = 0;
+        matrix[(level) * width + i ] = dotcolors[0];
+      }
+    }
+    else {
+      if (level % 2 != 0) {
+        // Turn current row's value black
+        matrix[(bottom_level + 1) * width + i] = 0;
+        matrix[(bottom_level) * width + width - i - 1] = dotcolors[0];
+      }
+      else {
+          matrix[(bottom_level + 1) * width + width - i - 1] = 0;
+        matrix[(bottom_level) * width + i ] = dotcolors[0];
+      }
+    }
+  }
+
+  level++;
+}*/
 
 static void ctrl_c_handler(int signum)
 {
@@ -392,10 +469,18 @@ int main(int argc, char *argv[])
 
     while (running)
     {
-        matrix_raise();
+        // Manages the matrix
+
+        // Original demo
+        /*matrix_raise();
         matrix_bottom();
+        matrix_render();*/
+
+        // New demo
+        matrix_oscillate();
         matrix_render();
 
+        // writes it to the the PCM memory buffer
         if ((ret = ws2811_render(&ledstring)) != WS2811_SUCCESS)
         {
             fprintf(stderr, "ws2811_render failed: %s\n", ws2811_get_return_t_str(ret));
@@ -403,7 +488,8 @@ int main(int argc, char *argv[])
         }
 
         // 15 frames /sec
-        usleep(1000000 / 15);
+        //usleep(1000000 / 15);
+        usleep(1000000 / 20);
     }
 
     if (clear_on_exit) {
