@@ -1,4 +1,6 @@
+#include "pixel_movement.h"
 #include "patterns.h"
+#include "ws2811.h"
 
 void matrix_raise(void)
 {
@@ -41,8 +43,46 @@ void matrix_bottom(void)
  * @param matrixWidth 1-based value for how wide a matrix is (# of columns)
  * @param matrixSize 1-based value for total length (number of pixels) in the LED matrix
  */
-void matrix_oscillate(int matrixWidth,int matrixSize) {
+void matrix_oscillate(ws2811_led_t *matrix, int matrixWidth,int matrixSize) {
+  // Get the height of the matrix
+  int height = matrixSize / matrixWidth;
+  static int level = matrixSize / matrixWidth;
 
+  // Reset level it it 
+  if (level + 1 > matrixWidth)
+    level = -height + 1;
+
+  // Loop through the a row of the matrix
+  for (int i = 0; i < matrixWidth; i++) {
+
+    // Every other value is going to be on opposing sides
+    // For odd values
+    if(i % 2 != 0) {
+      //TODO: how do we account for always going down
+      int currPixel = (abs(level - 1)) * matrixWidth + i;
+      int nextPixel = up(currPixel, matrixWidth, matrixSize);
+
+      // If moving up is a valid move, do it
+      if(nextPixel) {
+        matrix[currPixel] = 0;
+        matrix[nextPixel] = dotcolors[0];
+      }
+      // Otherwise, go down
+      else {
+        nextPixel = down(currPixel, matrixWidth, matrixSize);
+        matrix[currPixel] = 0;
+        matrix[nextPixel] = dotcolors[0];
+      }
+
+      
+    }
+    // For even values
+    else {
+
+    }
+  }
+
+  level++;
 }
 
 void matrix_oscillate(void) {
