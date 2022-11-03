@@ -1,7 +1,7 @@
 // TODO: need to change all functions to return array/struct and take in those array/structs as arguements
 
 // Move all pixels to the next index in the array
-void strand_raise(int start, int end) {
+void strand_shift(int start, int end) {
 	for (int y = (end - 1); y >= start; y--) {
 		matrix[y] = matrix[y - 1];
 	}
