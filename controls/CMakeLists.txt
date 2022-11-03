@@ -1,0 +1,4 @@
+add_library(matrix_pixel_movement src/matrix_pixel_movement.c)
+add_library(strand_pixel_movement src/strand_pixel_movement.c)
+
+target_include_directories(matrix_pixel_movement PUBLIC include)
