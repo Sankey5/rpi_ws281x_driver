@@ -1,4 +1,4 @@
-
+#include "patterns.h"
 
 void matrix_raise(void)
 {
@@ -33,6 +33,16 @@ void matrix_bottom(void)
             matrix[dotspos[i] + (height - 1) * width] = dotcolors[i%8];
         }
     }
+}
+
+/**
+ * @brief 
+ * 
+ * @param matrixWidth 1-based value for how wide a matrix is (# of columns)
+ * @param matrixSize 1-based value for total length (number of pixels) in the LED matrix
+ */
+void matrix_oscillate(int matrixWidth,int matrixSize) {
+
 }
 
 void matrix_oscillate(void) {
